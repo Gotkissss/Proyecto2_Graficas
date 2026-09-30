@@ -31,10 +31,10 @@ impl LuzDelCielo {
             let mediodia = Tinte::new(1.0, 0.96, 0.88);
             atardecer.mezclar(mediodia, escalon_suave(0.0, 0.45, sol.y)) * (1.25 * fuerza)
         } else {
-            Tinte::new(0.16, 0.22, 0.4) * (0.8 * fuerza)
+            Tinte::new(0.2, 0.27, 0.46) * fuerza
         };
 
-        let ambiente = Tinte::new(0.022, 0.03, 0.06).mezclar(Tinte::new(0.30, 0.38, 0.52), claridad);
+        let ambiente = Tinte::new(0.035, 0.045, 0.085).mezclar(Tinte::new(0.30, 0.38, 0.52), claridad);
 
         LuzDelCielo { sol, hacia, color, ambiente, claridad }
     }
@@ -106,7 +106,7 @@ pub fn encender_faroles(mundo: &Mundo, bodega: &Bodega) -> Vec<Farol> {
         .iter()
         .map(|g| {
             // un grupo grande alumbra más, pero no en proporción directa
-            let fuerza = 2.4 * g.cuantos.sqrt().min(2.2);
+            let fuerza = 3.0 * g.cuantos.sqrt().min(2.2);
             Farol { posicion: g.suma / g.cuantos, color: g.color * fuerza, alcance: 9.0 + g.cuantos.min(6.0) }
         })
         .collect()

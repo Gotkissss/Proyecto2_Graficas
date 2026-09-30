@@ -5,6 +5,7 @@ mod lienzo;
 mod luces;
 mod materiales;
 mod mundo;
+mod obras;
 mod pintor;
 mod ruido;
 mod terreno;
@@ -48,7 +49,8 @@ fn main() {
     let hora = numero(&args, "--hora", 10.0);
 
     let semilla = numero(&args, "--semilla", 7.0) as u32;
-    let (mundo, _relieve) = terreno::esculpir_isla(semilla);
+    let (mut mundo, mut relieve) = terreno::esculpir_isla(semilla);
+    obras::poblar(&mut mundo, &mut relieve, semilla);
     let bodega = Bodega::surtir();
     let escena = Escena {
         faroles: luces::encender_faroles(&mundo, &bodega),

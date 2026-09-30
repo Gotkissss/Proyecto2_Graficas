@@ -215,7 +215,7 @@ impl Bodega {
         obsidiana.albedo = 0.7;
         obsidiana.especular = 0.8;
         obsidiana.pulido = 90.0;
-        obsidiana.reflejo = 0.38;
+        obsidiana.reflejo = 0.3;
         materiales.push(obsidiana);
 
         let mut oro = e.basico("oro");
