@@ -191,15 +191,37 @@ impl Escena {
         abajo * (1.0 - fb) + arriba * fb
     }
 
+    /// Saca la normal del mapa normal (que viene en espacio tangente) y la pasa al mundo.
+    /// Como todas las caras están alineadas a los ejes, la tangente y la bitangente
+    /// salen directo del eje de la cara.
+    fn normal_con_relieve(&self, mapa: usize, golpe: &Golpe, u: f32, v: f32) -> Vec3 {
+        let t = self.bodega.texturas[mapa].texel(u, v);
+        let (nx, ny, nz) = (t[0] * 2.0 - 1.0, t[1] * 2.0 - 1.0, t[2] * 2.0 - 1.0);
+
+        let mundo = match golpe.eje {
+            // en las caras laterales la v de la textura va al revés que el eje y
+            0 => Vec3::new(nz * golpe.signo, -ny, nx),
+            1 => Vec3::new(nx, nz * golpe.signo, ny),
+            _ => Vec3::new(nx, -ny, nz * golpe.signo),
+        };
+        mundo.unitario()
+    }
+
     fn sombrear(&self, golpe: &Golpe, origen: Vec3, dir: Vec3, medio: u8, rebote: u32, aporte: f32) -> Tinte {
         let material = self.bodega.material(golpe.bloque);
         let punto = origen + dir * golpe.distancia;
-        let normal = golpe.normal();
-        let afuera = punto + normal * PELLIZCO;
+        let cara = golpe.normal();
+        let afuera = punto + cara * PELLIZCO;
 
         let (u, v) = coordenadas_de_cara(punto, golpe.eje);
         let texel = self.bodega.texturas[self.textura_de_cara(material, golpe)].texel(u, v);
         let base = Tinte::new(texel[0], texel[1], texel[2]);
+
+        // la normal de la cara sirve para despegar los rayos; para iluminar se usa la del relieve
+        let normal = match material.relieve {
+            Some(mapa) => self.normal_con_relieve(mapa, golpe, u, v),
+            None => cara,
+        };
 
         let oclusion = 0.35 + 0.65 * self.oclusion(golpe, punto);
         let mut difusa = self.cielo.ambiente * oclusion;
@@ -207,7 +229,7 @@ impl Escena {
 
         let hacia_luz = self.cielo.hacia;
         let de_frente = normal.punto(hacia_luz);
-        if de_frente > 0.0 {
+        if de_frente > 0.0 && cara.punto(hacia_luz) > 0.0 {
             let llega = self.luz_que_llega(afuera, hacia_luz, f32::INFINITY);
             if llega.mayor() > 0.0 {
                 let luz = self.cielo.color * llega;
