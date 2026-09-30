@@ -1,0 +1,17 @@
+[package]
+name = "diorama"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+raylib = "6.0.0"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+# en debug el raytracer va a 1 fps, con esto al menos se puede probar
+[profile.dev]
+opt-level = 2
