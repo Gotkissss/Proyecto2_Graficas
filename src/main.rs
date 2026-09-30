@@ -46,6 +46,7 @@ struct Mando {
 fn levantar_isla(semilla: u32, bodega: &Bodega) -> (Mundo, Vec<Farol>) {
     let (mut mundo, mut relieve) = terreno::esculpir_isla(semilla);
     obras::poblar(&mut mundo, &mut relieve, semilla);
+    mundo.medir_vacios();
     let faroles = luces::encender_faroles(&mundo, bodega);
     (mundo, faroles)
 }
@@ -205,7 +206,9 @@ fn main() {
         cielo: LuzDelCielo::a_las(mando.hora),
         reloj: 0.0,
     };
-    let cuadrilla = Cuadrilla::reunir();
+    let mut cuadrilla = Cuadrilla::reunir();
+    // --hilos 1 sirve para ver cuánto ayuda el paralelismo
+    cuadrilla.hilos = numero(&args, "--hilos", cuadrilla.hilos as f32).max(1.0) as usize;
 
     if let Some(ruta) = argumento(&args, "--foto") {
         modo_foto(&escena, &mando.camara, &cuadrilla, ruta);

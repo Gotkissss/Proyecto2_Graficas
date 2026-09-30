@@ -57,12 +57,13 @@ impl Boveda {
             color = color.mezclar(Tinte::new(1.0, 0.42, 0.14), (fuerza * 0.7).min(1.0));
         }
 
+        // el disco y el halo solo se calculan cerca del astro, los powf no son baratos
         let alineado = dir.punto(luz.sol);
-        if luz.sol.y > -0.12 && alineado > 0.0 {
+        if luz.sol.y > -0.12 && alineado > 0.8 {
             let disco = escalon_suave(0.9991, 0.9995, alineado);
             let halo = alineado.powf(350.0) * 0.5 + alineado.powf(24.0) * 0.12;
             color += Tinte::new(1.0, 0.85, 0.6) * (halo * luz.claridad.max(0.3)) + Tinte::new(3.0, 2.7, 2.1) * disco;
-        } else if luz.sol.y < 0.12 && alineado < 0.0 {
+        } else if luz.sol.y < 0.12 && alineado < -0.98 {
             let disco = escalon_suave(0.9993, 0.9996, -alineado);
             let halo = (-alineado).powf(500.0) * 0.15;
             color += Tinte::new(0.85, 0.9, 1.0) * (disco + halo) * (1.0 - luz.claridad);
