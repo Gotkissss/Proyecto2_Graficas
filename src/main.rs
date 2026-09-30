@@ -6,14 +6,15 @@ mod luces;
 mod materiales;
 mod mundo;
 mod pintor;
+mod ruido;
+mod terreno;
 mod texturas;
 mod trazador;
 
 use camara::CamaraOrbital;
 use lienzo::Lienzo;
 use luces::LuzDelCielo;
-use materiales::{Bloque, Bodega};
-use mundo::Mundo;
+use materiales::Bodega;
 use pintor::Cuadrilla;
 use raylib::prelude::*;
 use trazador::Escena;
@@ -21,35 +22,6 @@ use trazador::Escena;
 const ANCHO_VENTANA: i32 = 1100;
 const ALTO_VENTANA: i32 = 700;
 const MUESTRAS_FOTO: u32 = 16;
-
-fn mundo_de_prueba() -> Mundo {
-    let mut m = Mundo::vacio(16, 8, 16);
-    for x in 0..16 {
-        for z in 0..16 {
-            m.poner(x, 0, z, Bloque::Piedra.id());
-            m.poner(x, 1, z, if (x + z) % 5 == 0 { Bloque::Arena.id() } else { Bloque::Pasto.id() });
-        }
-    }
-    for y in 2..5 {
-        m.poner(4, y, 4, Bloque::Tronco.id());
-        m.poner(10, y, 7, Bloque::Ladrillo.id());
-    }
-    m.poner(4, 5, 4, Bloque::Hojas.id());
-    m.poner(10, 5, 7, Bloque::PiedraLuz.id());
-    m.poner(7, 2, 11, Bloque::Oro.id());
-    m.poner(8, 2, 11, Bloque::Adoquin.id());
-    m.poner(9, 2, 11, Bloque::Tablones.id());
-    m.poner(12, 2, 12, Bloque::Vidrio.id());
-    m.poner(12, 3, 12, Bloque::Vidrio.id());
-    m.poner(3, 2, 12, Bloque::Obsidiana.id());
-    for x in 6..11 {
-        for z in 2..6 {
-            m.poner(x, 1, z, Bloque::Agua.id());
-            m.poner(x, 0, z, Bloque::Arena.id());
-        }
-    }
-    m
-}
 
 /// `diorama --foto salida.png` renderiza un cuadro y sale, sin abrir ventana.
 fn modo_foto(escena: &Escena, camara: &CamaraOrbital, cuadrilla: &Cuadrilla, ruta: &str) {
@@ -75,7 +47,8 @@ fn main() {
     let foto = argumento(&args, "--foto");
     let hora = numero(&args, "--hora", 10.0);
 
-    let mundo = mundo_de_prueba();
+    let semilla = numero(&args, "--semilla", 7.0) as u32;
+    let (mundo, _relieve) = terreno::esculpir_isla(semilla);
     let bodega = Bodega::surtir();
     let escena = Escena {
         faroles: luces::encender_faroles(&mundo, &bodega),
@@ -85,7 +58,7 @@ fn main() {
         cielo: LuzDelCielo::a_las(hora),
         reloj: 0.0,
     };
-    let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), numero(&args, "--zoom", 28.0));
+    let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), numero(&args, "--zoom", 50.0));
     camara.giro = numero(&args, "--giro", camara.giro);
     camara.cabeceo = numero(&args, "--cabeceo", camara.cabeceo);
 

@@ -20,7 +20,6 @@ pub enum Bloque {
     Lava,
     Obsidiana,
     Oro,
-    Nieve,
 }
 
 impl Bloque {
@@ -44,6 +43,8 @@ pub struct Material {
     /// exponente del brillo: más alto = punto de luz más chico
     pub pulido: f32,
     pub reflejo: f32,
+    /// los metales tiñen lo que reflejan con su propio color
+    pub metalico: bool,
     pub transparencia: f32,
     pub indice_refraccion: f32,
     /// cuánto se come de cada canal por unidad de distancia dentro del bloque
@@ -103,6 +104,7 @@ impl Estante {
             especular: 0.05,
             pulido: 10.0,
             reflejo: 0.0,
+            metalico: false,
             transparencia: 0.0,
             indice_refraccion: 1.0,
             absorcion: Tinte::CERO,
@@ -221,15 +223,8 @@ impl Bodega {
         oro.especular = 1.0;
         oro.pulido = 120.0;
         oro.reflejo = 0.55;
+        oro.metalico = true;
         materiales.push(oro);
-
-        let mut nieve = e.basico("nieve_lado");
-        nieve.arriba = e.traer("nieve", true);
-        nieve.abajo = e.traer("tierra", true);
-        nieve.albedo = 1.0;
-        nieve.especular = 0.25;
-        nieve.pulido = 40.0;
-        materiales.push(nieve);
 
         Bodega { texturas: e.texturas, materiales }
     }

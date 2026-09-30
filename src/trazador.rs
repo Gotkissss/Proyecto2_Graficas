@@ -324,8 +324,7 @@ impl Escena {
 
         if material.reflejo > 0.0 && aporte * material.reflejo > APORTE_MINIMO {
             let reflejado = self.seguir(afuera, dir.rebotar(normal), medio, rebote + 1, aporte * material.reflejo);
-            // los metales tiñen lo que reflejan con su propio color
-            let tono = Tinte::UNO.mezclar(base / base.mayor().max(1e-3), 0.5);
+            let tono = if material.metalico { base / base.mayor().max(1e-3) } else { Tinte::UNO };
             return superficie * (1.0 - material.reflejo) + reflejado * tono * material.reflejo + brillo;
         }
 
