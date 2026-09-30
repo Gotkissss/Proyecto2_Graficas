@@ -19,10 +19,6 @@ impl Vec3 {
         Vec3 { x, y, z }
     }
 
-    pub const fn parejo(v: f32) -> Self {
-        Vec3::new(v, v, v)
-    }
-
     pub fn punto(self, otro: Vec3) -> f32 {
         self.x * otro.x + self.y * otro.y + self.z * otro.z
     }

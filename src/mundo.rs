@@ -1,6 +1,7 @@
 use crate::algebra::Vec3;
+use crate::materiales::Bloque;
 
-pub const AIRE: u8 = 0;
+pub const AIRE: u8 = Bloque::Aire.id();
 
 /// hasta cuántas celdas de aire libre se miden alrededor de cada celda
 const HOLGURA_MAX: u8 = 15;

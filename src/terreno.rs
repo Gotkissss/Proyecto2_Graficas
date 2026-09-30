@@ -15,8 +15,6 @@ pub struct Relieve {
     alturas: Vec<i32>,
     /// columnas que ya tienen algo construido encima
     ocupado: Vec<bool>,
-    pub volcan: (f32, f32),
-    pub lago: (f32, f32),
     /// ángulo (desde el centro) hacia donde quedó el volcán
     pub rumbo: f32,
 }
@@ -61,7 +59,7 @@ pub fn esculpir_isla(semilla: u32) -> (Mundo, Relieve) {
     let lago = (centro - (rumbo + 0.5).cos() * 7.0, centro - (rumbo + 0.5).sin() * 7.0);
 
     let celdas = (LADO * LADO) as usize;
-    let mut relieve = Relieve { alturas: vec![-1; celdas], ocupado: vec![false; celdas], volcan, lago, rumbo };
+    let mut relieve = Relieve { alturas: vec![-1; celdas], ocupado: vec![false; celdas], rumbo };
 
     // la lava queda un poco más abajo que el borde del cráter
     let cima = 21.0 + 11.0 + fractal(volcan.0 * 0.08, volcan.1 * 0.08, 4, semilla) * 5.0;

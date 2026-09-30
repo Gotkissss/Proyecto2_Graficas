@@ -285,7 +285,9 @@ impl Escena {
             if caida * farol.color.mayor() < minimo_visible {
                 continue;
             }
-            alumbrar(separacion / d, farol.color * caida, d);
+            // un temblor leve, como de llama
+            let parpadeo = 1.0 + 0.07 * (self.reloj * 6.0 + farol.posicion.x * 3.1).sin();
+            alumbrar(separacion / d, farol.color * (caida * parpadeo), d);
         }
 
         let superficie = base * difusa * material.albedo;
