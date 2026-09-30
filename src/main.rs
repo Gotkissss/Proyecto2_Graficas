@@ -61,8 +61,8 @@ fn numero(args: &[String], bandera: &str, por_defecto: f32) -> f32 {
 }
 
 /// `diorama --foto salida.png` renderiza un cuadro y sale, sin abrir ventana.
-fn modo_foto(escena: &Escena, camara: &CamaraOrbital, cuadrilla: &Cuadrilla, ruta: &str) {
-    let mut lienzo = Lienzo::nuevo(ANCHO_VENTANA as usize, ALTO_VENTANA as usize);
+fn modo_foto(escena: &Escena, camara: &CamaraOrbital, cuadrilla: &Cuadrilla, ruta: &str, reduccion: usize) {
+    let mut lienzo = Lienzo::nuevo(ANCHO_VENTANA as usize / reduccion, ALTO_VENTANA as usize / reduccion);
     let inicio = std::time::Instant::now();
     for _ in 0..MUESTRAS_FOTO {
         cuadrilla.pintar(escena, camara, &mut lienzo);
@@ -211,7 +211,9 @@ fn main() {
     cuadrilla.hilos = numero(&args, "--hilos", cuadrilla.hilos as f32).max(1.0) as usize;
 
     if let Some(ruta) = argumento(&args, "--foto") {
-        modo_foto(&escena, &mando.camara, &cuadrilla, ruta);
+        escena.reloj = numero(&args, "--reloj", 0.0);
+        let reduccion = numero(&args, "--reducir", 1.0).max(1.0) as usize;
+        modo_foto(&escena, &mando.camara, &cuadrilla, ruta, reduccion);
         return;
     }
     if args.iter().any(|a| a == "--medir") {
