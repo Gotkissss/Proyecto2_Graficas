@@ -106,8 +106,8 @@ pub fn encender_faroles(mundo: &Mundo, bodega: &Bodega) -> Vec<Farol> {
         .iter()
         .map(|g| {
             // un grupo grande alumbra más, pero no en proporción directa
-            let fuerza = 3.0 * g.cuantos.sqrt().min(2.2);
-            Farol { posicion: g.suma / g.cuantos, color: g.color * fuerza, alcance: 9.0 + g.cuantos.min(6.0) }
+            let fuerza = 4.2 * g.cuantos.sqrt().min(2.2);
+            Farol { posicion: g.suma / g.cuantos, color: g.color * fuerza, alcance: 13.0 + g.cuantos.min(5.0) }
         })
         .collect()
 }

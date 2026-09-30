@@ -49,7 +49,9 @@ impl Boveda {
         }
 
         // franja naranja del amanecer/atardecer, más fuerte del lado donde está el sol
-        let sol_bajo = 1.0 - escalon_suave(0.0, 0.4, luz.sol.y.abs());
+        // después de que el sol se mete, el naranja se apaga más rápido
+        let duracion = if luz.sol.y > 0.0 { 0.4 } else { 0.24 };
+        let sol_bajo = 1.0 - escalon_suave(0.0, duracion, luz.sol.y.abs());
         if sol_bajo > 0.0 {
             let cerca_del_horizonte = (-dir.y.abs() * 5.5).exp();
             let hacia_el_sol = 0.35 + 0.65 * dir.punto(luz.sol).max(0.0);

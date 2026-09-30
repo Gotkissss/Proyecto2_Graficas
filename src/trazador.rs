@@ -270,6 +270,8 @@ impl Escena {
 
         alumbrar(self.cielo.hacia, self.cielo.color, f32::INFINITY);
 
+        // a pleno sol un farol lejano no se nota, así que ni se le tira el rayo de sombra
+        let minimo_visible = 0.012 + 0.09 * self.cielo.claridad;
         for farol in &self.faroles {
             let separacion = farol.posicion - afuera;
             let d2 = separacion.punto(separacion);
@@ -279,7 +281,10 @@ impl Escena {
             let d = d2.sqrt();
             // cae con el cuadrado de la distancia y se corta suave al llegar al alcance
             let ventana = 1.0 - d / farol.alcance;
-            let caida = ventana * ventana / (1.0 + 0.08 * d2);
+            let caida = ventana * ventana / (1.0 + 0.06 * d2);
+            if caida * farol.color.mayor() < minimo_visible {
+                continue;
+            }
             alumbrar(separacion / d, farol.color * caida, d);
         }
 
@@ -313,7 +318,7 @@ impl Escena {
             let refractado = match doblado {
                 Some(d) => {
                     let peso = aporte * transparencia * (1.0 - espejo);
-                    self.seguir(punto - normal * PELLIZCO, d, golpe.bloque, rebote + 1, peso)
+                    self.seguir(punto - cara * PELLIZCO, d, golpe.bloque, rebote + 1, peso)
                 }
                 None => Tinte::CERO,
             };
@@ -322,10 +327,19 @@ impl Escena {
             return superficie * (1.0 - transparencia) + a_traves * transparencia + brillo;
         }
 
-        if material.reflejo > 0.0 && aporte * material.reflejo > APORTE_MINIMO {
-            let reflejado = self.seguir(afuera, dir.rebotar(normal), medio, rebote + 1, aporte * material.reflejo);
-            let tono = if material.metalico { base / base.mayor().max(1e-3) } else { Tinte::UNO };
-            return superficie * (1.0 - material.reflejo) + reflejado * tono * material.reflejo + brillo;
+        if material.reflejo > 0.0 {
+            // el metal refleja parejo y tiñe el reflejo; lo demás (obsidiana pulida)
+            // refleja poco de frente y mucho de lado
+            let (espejo, tono) = if material.metalico {
+                (material.reflejo, base / base.mayor().max(1e-3))
+            } else {
+                let coseno = (-dir.punto(normal)).clamp(0.0, 1.0);
+                (material.reflejo + (0.75 - material.reflejo) * (1.0 - coseno).powi(5), Tinte::UNO)
+            };
+            if aporte * espejo > APORTE_MINIMO {
+                let reflejado = self.seguir(afuera, dir.rebotar(normal), medio, rebote + 1, aporte * espejo);
+                return superficie * (1.0 - espejo) + reflejado * tono * espejo + brillo;
+            }
         }
 
         superficie + brillo
