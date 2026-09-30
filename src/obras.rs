@@ -33,7 +33,7 @@ fn levantar_cabana(mundo: &mut Mundo, relieve: &mut Relieve) {
     const ANCHO: i32 = 7;
     const FONDO: i32 = 6;
 
-    let (cx, cz) = sitio(relieve, 1.75, 8.0);
+    let (cx, cz) = sitio(relieve, 2.1, 8.0);
     let (x0, z0) = (cx - ANCHO / 2, cz - FONDO / 2);
 
     // se construye al nivel del punto más alto del terreno que pisa
@@ -118,7 +118,7 @@ fn levantar_cabana(mundo: &mut Mundo, relieve: &mut Relieve) {
     }
 }
 
-/// Plataforma de adoquín con pilares de obsidiana y bloques de oro, cerca del lago.
+/// Plataforma de adoquín con pilares de obsidiana rematados en oro, cerca del lago.
 fn alzar_altar(mundo: &mut Mundo, relieve: &mut Relieve) {
     let (cx, cz) = sitio(relieve, -1.6, 9.5);
     let nivel = relieve.altura(cx, cz).max(NIVEL_AGUA);
@@ -140,8 +140,9 @@ fn alzar_altar(mundo: &mut Mundo, relieve: &mut Relieve) {
             }
         }
     }
+    // en el centro una piedra luminosa, para que de noche se refleje en el oro y en el lago
     mundo.poner(cx, nivel + 1, cz, Bloque::Obsidiana.id());
-    mundo.poner(cx, nivel + 2, cz, Bloque::Oro.id());
+    mundo.poner(cx, nivel + 2, cz, Bloque::PiedraLuz.id());
 }
 
 fn sembrar_arboles(mundo: &mut Mundo, relieve: &mut Relieve, semilla: u32) {
