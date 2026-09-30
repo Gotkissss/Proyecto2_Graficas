@@ -46,6 +46,8 @@ pub struct Material {
     pub reflejo: f32,
     pub transparencia: f32,
     pub indice_refraccion: f32,
+    /// cuánto se come de cada canal por unidad de distancia dentro del bloque
+    pub absorcion: Tinte,
     /// > 0 si el bloque brilla solo
     pub emision: f32,
     /// color de la luz que tira (solo importa si emite)
@@ -103,6 +105,7 @@ impl Estante {
             reflejo: 0.0,
             transparencia: 0.0,
             indice_refraccion: 1.0,
+            absorcion: Tinte::CERO,
             emision: 0.0,
             resplandor: Tinte::CERO,
             calado: false,
@@ -158,6 +161,7 @@ impl Bodega {
         agua.reflejo = 0.1;
         agua.transparencia = 0.9;
         agua.indice_refraccion = 1.33;
+        agua.absorcion = Tinte::new(0.34, 0.11, 0.05);
         materiales.push(agua);
 
         let mut vidrio = e.basico("vidrio");
@@ -167,6 +171,7 @@ impl Bodega {
         vidrio.reflejo = 0.08;
         vidrio.transparencia = 0.95;
         vidrio.indice_refraccion = 1.5;
+        vidrio.absorcion = Tinte::new(0.06, 0.02, 0.03);
         materiales.push(vidrio);
 
         let mut tronco = e.basico("tronco_lado");

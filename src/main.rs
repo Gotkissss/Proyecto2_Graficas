@@ -36,6 +36,15 @@ fn mundo_de_prueba() -> Mundo {
     m.poner(7, 2, 11, Bloque::Oro.id());
     m.poner(8, 2, 11, Bloque::Adoquin.id());
     m.poner(9, 2, 11, Bloque::Tablones.id());
+    m.poner(12, 2, 12, Bloque::Vidrio.id());
+    m.poner(12, 3, 12, Bloque::Vidrio.id());
+    m.poner(3, 2, 12, Bloque::Obsidiana.id());
+    for x in 6..11 {
+        for z in 2..6 {
+            m.poner(x, 1, z, Bloque::Agua.id());
+            m.poner(x, 0, z, Bloque::Arena.id());
+        }
+    }
     m
 }
 

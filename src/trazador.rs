@@ -5,6 +5,9 @@ use crate::mundo::{AIRE, Golpe, Mundo};
 
 /// separación para que los rayos secundarios no choquen con la cara de donde salen
 const PELLIZCO: f32 = 1e-3;
+const REBOTES_MAX: u32 = 5;
+/// un rayo secundario que aporta menos que esto al pixel ya no vale la pena
+const APORTE_MINIMO: f32 = 0.02;
 
 pub struct Escena {
     pub mundo: Mundo,
@@ -26,9 +29,58 @@ pub fn coordenadas_de_cara(punto: Vec3, eje: usize) -> (f32, f32) {
 
 impl Escena {
     pub fn color_de(&self, origen: Vec3, dir: Vec3) -> Tinte {
-        match self.primer_golpe(origen, dir, AIRE) {
-            Some(golpe) => self.sombrear(&golpe, origen, dir),
-            None => Tinte::new(0.45, 0.65, 0.95) * self.cielo.claridad,
+        self.seguir(origen, dir, AIRE, 0, 1.0)
+    }
+
+    fn fondo(&self, _dir: Vec3) -> Tinte {
+        Tinte::new(0.45, 0.65, 0.95) * self.cielo.claridad
+    }
+
+    /// Sigue un rayo por la escena. `medio` es el bloque dentro del cual viaja (aire,
+    /// agua o vidrio) y `aporte` es cuánto pesa este rayo en el color final del pixel.
+    fn seguir(&self, origen: Vec3, dir: Vec3, medio: u8, rebote: u32, aporte: f32) -> Tinte {
+        let Some(golpe) = self.primer_golpe(origen, dir, medio) else {
+            return self.fondo(dir);
+        };
+        if medio == AIRE {
+            return self.sombrear(&golpe, origen, dir, medio, rebote, aporte);
+        }
+
+        // el rayo venía por dentro de algo transparente: ese tramo se tiñe (ley de Beer)
+        let por_dentro = self.bodega.material(medio);
+        let a = por_dentro.absorcion * (-golpe.distancia);
+        let filtro = Tinte::new(a.x.exp(), a.y.exp(), a.z.exp());
+
+        let color = if golpe.bloque == AIRE {
+            self.salir_al_aire(&golpe, origen, dir, medio, rebote, aporte)
+        } else {
+            self.sombrear(&golpe, origen, dir, medio, rebote, aporte)
+        };
+        color * filtro
+    }
+
+    fn salir_al_aire(&self, golpe: &Golpe, origen: Vec3, dir: Vec3, medio: u8, rebote: u32, aporte: f32) -> Tinte {
+        let material = self.bodega.material(medio);
+        let punto = origen + dir * golpe.distancia;
+        let normal = golpe.normal();
+
+        // el marco del vidrio también se ve por la cara de atrás
+        let mut cara = *golpe;
+        cara.signo = -golpe.signo;
+        let (u, v) = coordenadas_de_cara(punto, golpe.eje);
+        let texel = self.bodega.texturas[self.textura_de_cara(material, &cara)].texel(u, v);
+        if texel[3] > 0.9 {
+            let luz = self.cielo.ambiente + self.cielo.color * 0.5;
+            return Tinte::new(texel[0], texel[1], texel[2]) * luz * material.albedo;
+        }
+
+        if rebote >= REBOTES_MAX {
+            return self.fondo(dir);
+        }
+        match dir.doblar(normal, material.indice_refraccion) {
+            Some(doblado) => self.seguir(punto - normal * PELLIZCO, doblado, AIRE, rebote + 1, aporte),
+            // reflexión interna total: el rayo se queda adentro
+            None => self.seguir(punto + normal * PELLIZCO, dir.rebotar(normal), medio, rebote + 1, aporte),
         }
     }
 
@@ -139,7 +191,7 @@ impl Escena {
         abajo * (1.0 - fb) + arriba * fb
     }
 
-    fn sombrear(&self, golpe: &Golpe, origen: Vec3, dir: Vec3) -> Tinte {
+    fn sombrear(&self, golpe: &Golpe, origen: Vec3, dir: Vec3, medio: u8, rebote: u32, aporte: f32) -> Tinte {
         let material = self.bodega.material(golpe.bloque);
         let punto = origen + dir * golpe.distancia;
         let normal = golpe.normal();
@@ -168,6 +220,52 @@ impl Escena {
             }
         }
 
-        base * difusa * material.albedo + brillo
+        let superficie = base * difusa * material.albedo;
+        if rebote >= REBOTES_MAX {
+            return superficie + brillo;
+        }
+
+        // la textura manda qué partes del bloque son transparentes (el marco del vidrio no)
+        let transparencia = material.transparencia * (1.0 - texel[3]);
+        if transparencia > 0.01 {
+            let n1 = self.bodega.material(medio).indice_refraccion;
+            let n2 = material.indice_refraccion;
+
+            // fresnel (aproximación de Schlick): de lado refleja más que de frente
+            let r0 = ((n1 - n2) / (n1 + n2)).powi(2);
+            let coseno = (-dir.punto(normal)).clamp(0.0, 1.0);
+            let mut espejo = (r0 + (1.0 - r0) * (1.0 - coseno).powi(5)).max(material.reflejo);
+
+            let doblado = dir.doblar(normal, n1 / n2);
+            if doblado.is_none() {
+                espejo = 1.0;
+            }
+
+            let rebotado = dir.rebotar(normal);
+            let reflejado = if aporte * transparencia * espejo > APORTE_MINIMO {
+                self.seguir(afuera, rebotado, medio, rebote + 1, aporte * transparencia * espejo)
+            } else {
+                self.fondo(rebotado)
+            };
+            let refractado = match doblado {
+                Some(d) => {
+                    let peso = aporte * transparencia * (1.0 - espejo);
+                    self.seguir(punto - normal * PELLIZCO, d, golpe.bloque, rebote + 1, peso)
+                }
+                None => Tinte::CERO,
+            };
+
+            let a_traves = reflejado * espejo + refractado * (1.0 - espejo);
+            return superficie * (1.0 - transparencia) + a_traves * transparencia + brillo;
+        }
+
+        if material.reflejo > 0.0 && aporte * material.reflejo > APORTE_MINIMO {
+            let reflejado = self.seguir(afuera, dir.rebotar(normal), medio, rebote + 1, aporte * material.reflejo);
+            // los metales tiñen lo que reflejan con su propio color
+            let tono = Tinte::UNO.mezclar(base / base.mayor().max(1e-3), 0.5);
+            return superficie * (1.0 - material.reflejo) + reflejado * tono * material.reflejo + brillo;
+        }
+
+        superficie + brillo
     }
 }
