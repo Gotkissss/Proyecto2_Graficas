@@ -58,6 +58,11 @@ impl Material {
     pub fn deja_pasar_luz(&self) -> bool {
         self.transparencia > 0.0
     }
+
+    /// Solo los bloques macizos oscurecen las esquinas de sus vecinos.
+    pub fn hace_sombra_suave(&self) -> bool {
+        !self.deja_pasar_luz() && !self.calado && self.emision == 0.0
+    }
 }
 
 /// Todas las texturas y los materiales, indexados por id de bloque.

@@ -1,6 +1,7 @@
 mod algebra;
 mod camara;
 mod lienzo;
+mod luces;
 mod materiales;
 mod mundo;
 mod pintor;
@@ -9,6 +10,7 @@ mod trazador;
 
 use camara::CamaraOrbital;
 use lienzo::Lienzo;
+use luces::LuzDelCielo;
 use materiales::{Bloque, Bodega};
 use mundo::Mundo;
 use raylib::prelude::*;
@@ -44,12 +46,28 @@ fn modo_foto(escena: &Escena, camara: &CamaraOrbital, ruta: &str) {
     lienzo.guardar_png(ruta);
 }
 
+/// Busca `--bandera valor` en los argumentos.
+fn argumento<'a>(args: &'a [String], bandera: &str) -> Option<&'a String> {
+    args.iter().position(|a| a == bandera).and_then(|i| args.get(i + 1))
+}
+
+fn numero(args: &[String], bandera: &str, por_defecto: f32) -> f32 {
+    argumento(args, bandera).and_then(|v| v.parse().ok()).unwrap_or(por_defecto)
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let foto = args.iter().position(|a| a == "--foto").and_then(|i| args.get(i + 1));
+    let foto = argumento(&args, "--foto");
+    let hora = numero(&args, "--hora", 10.0);
 
-    let escena = Escena { mundo: mundo_de_prueba(), bodega: Bodega::surtir() };
-    let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), 28.0);
+    let escena = Escena {
+        mundo: mundo_de_prueba(),
+        bodega: Bodega::surtir(),
+        cielo: LuzDelCielo::a_las(hora),
+    };
+    let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), numero(&args, "--zoom", 28.0));
+    camara.giro = numero(&args, "--giro", camara.giro);
+    camara.cabeceo = numero(&args, "--cabeceo", camara.cabeceo);
 
     if let Some(ruta) = foto {
         modo_foto(&escena, &camara, ruta);

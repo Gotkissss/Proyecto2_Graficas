@@ -69,13 +69,14 @@ impl Mundo {
         Vec3::new(self.ancho as f32, self.alto as f32, self.fondo as f32) * 0.5
     }
 
-    /// Avanza el rayo celda por celda (DDA de Amanatides y Woo) hasta topar con algo
-    /// distinto al `medio` por el que viaja. Normalmente el medio es aire, pero cuando
-    /// el rayo va dentro del agua o del vidrio el "golpe" puede ser la salida al aire.
+    /// Avanza el rayo celda por celda (DDA de Amanatides y Woo) y le va avisando a
+    /// `visita` cada vez que entra a una celda nueva. La visita devuelve `true` cuando
+    /// ya encontró lo que buscaba y no hace falta seguir.
     ///
-    /// Así no hay que probar el rayo contra cada cubo: solo se visitan las celdas que
-    /// el rayo realmente atraviesa.
-    pub fn recorrer(&self, origen: Vec3, dir: Vec3, medio: u8) -> Option<Golpe> {
+    /// Así no hay que probar el rayo contra cada cubo: solo se tocan las celdas que el
+    /// rayo realmente atraviesa. La celda donde nace el rayo no se visita.
+    #[inline]
+    pub fn caminar(&self, origen: Vec3, dir: Vec3, alcance: f32, mut visita: impl FnMut(&Golpe) -> bool) {
         let tam = [self.ancho, self.alto, self.fondo];
         let o = [origen.x, origen.y, origen.z];
         let d = [dir.x, dir.y, dir.z];
@@ -88,7 +89,7 @@ impl Mundo {
             let limite = tam[e] as f32;
             if d[e].abs() < 1e-9 {
                 if o[e] < 0.0 || o[e] >= limite {
-                    return None;
+                    return;
                 }
                 continue;
             }
@@ -104,8 +105,8 @@ impl Mundo {
             }
             t_sale = t_sale.min(lejos);
         }
-        if t_entra >= t_sale {
-            return None;
+        if t_entra >= t_sale || t_entra > alcance {
+            return;
         }
 
         let arranque = t_entra + 1e-4;
@@ -133,15 +134,17 @@ impl Mundo {
         let mut en_casa = eje_entrada == usize::MAX;
 
         loop {
-            let id = self.celdas[self.indice(celda[0], celda[1], celda[2])];
-            if id != medio && !en_casa {
-                return Some(Golpe {
+            if !en_casa {
+                let golpe = Golpe {
                     distancia: t,
-                    bloque: id,
+                    bloque: self.celdas[self.indice(celda[0], celda[1], celda[2])],
                     celda,
                     eje,
                     signo: -paso[eje] as f32,
-                });
+                };
+                if visita(&golpe) {
+                    return;
+                }
             }
             en_casa = false;
 
@@ -155,8 +158,8 @@ impl Mundo {
             t = t_cruce[eje];
             t_cruce[eje] += t_delta[eje];
             celda[eje] += paso[eje];
-            if celda[eje] < 0 || celda[eje] >= tam[eje] {
-                return None;
+            if t > alcance || celda[eje] < 0 || celda[eje] >= tam[eje] {
+                return;
             }
         }
     }
