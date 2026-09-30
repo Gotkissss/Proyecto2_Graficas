@@ -9,6 +9,7 @@ const PELLIZCO: f32 = 1e-3;
 const REBOTES_MAX: u32 = 5;
 /// un rayo secundario que aporta menos que esto al pixel ya no vale la pena
 const APORTE_MINIMO: f32 = 0.02;
+const AGUA: u8 = Bloque::Agua.id();
 
 pub struct Escena {
     pub mundo: Mundo,
@@ -19,8 +20,6 @@ pub struct Escena {
     /// segundos desde que arrancó, para lo que se anima
     pub reloj: f32,
 }
-
-const AGUA: u8 = Bloque::Agua.id();
 
 /// Coordenadas de textura dentro de la cara golpeada.
 /// En las caras laterales la v va invertida para que la textura no salga de cabeza.
