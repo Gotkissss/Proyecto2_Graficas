@@ -1,4 +1,5 @@
 mod algebra;
+mod boveda;
 mod camara;
 mod lienzo;
 mod luces;
@@ -72,6 +73,7 @@ fn main() {
     let escena = Escena {
         mundo: mundo_de_prueba(),
         bodega: Bodega::surtir(),
+        boveda: boveda::Boveda::abrir(),
         cielo: LuzDelCielo::a_las(hora),
     };
     let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), numero(&args, "--zoom", 28.0));

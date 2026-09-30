@@ -17,7 +17,7 @@ impl LuzDelCielo {
     pub fn a_las(hora: f32) -> Self {
         let angulo = (hora - 6.0) / 24.0 * std::f32::consts::TAU;
         let sol = Vec3::new(angulo.cos(), angulo.sin(), 0.38).unitario();
-        let claridad = escalon_suave(-0.12, 0.2, sol.y);
+        let claridad = escalon_suave(-0.22, 0.18, sol.y);
 
         let de_dia = sol.y > 0.0;
         let hacia = if de_dia { sol } else { -sol };
@@ -29,10 +29,10 @@ impl LuzDelCielo {
             let mediodia = Tinte::new(1.0, 0.96, 0.88);
             atardecer.mezclar(mediodia, escalon_suave(0.0, 0.45, sol.y)) * (1.25 * fuerza)
         } else {
-            Tinte::new(0.16, 0.22, 0.4) * (0.55 * fuerza)
+            Tinte::new(0.16, 0.22, 0.4) * (0.8 * fuerza)
         };
 
-        let ambiente = Tinte::new(0.018, 0.024, 0.05).mezclar(Tinte::new(0.30, 0.38, 0.52), claridad);
+        let ambiente = Tinte::new(0.022, 0.03, 0.06).mezclar(Tinte::new(0.30, 0.38, 0.52), claridad);
 
         LuzDelCielo { sol, hacia, color, ambiente, claridad }
     }

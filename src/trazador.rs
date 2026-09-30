@@ -1,4 +1,5 @@
 use crate::algebra::{Tinte, Vec3};
+use crate::boveda::Boveda;
 use crate::luces::LuzDelCielo;
 use crate::materiales::{Bodega, Material};
 use crate::mundo::{AIRE, Golpe, Mundo};
@@ -12,6 +13,7 @@ const APORTE_MINIMO: f32 = 0.02;
 pub struct Escena {
     pub mundo: Mundo,
     pub bodega: Bodega,
+    pub boveda: Boveda,
     pub cielo: LuzDelCielo,
 }
 
@@ -32,8 +34,8 @@ impl Escena {
         self.seguir(origen, dir, AIRE, 0, 1.0)
     }
 
-    fn fondo(&self, _dir: Vec3) -> Tinte {
-        Tinte::new(0.45, 0.65, 0.95) * self.cielo.claridad
+    fn fondo(&self, dir: Vec3) -> Tinte {
+        self.boveda.mirar(dir, &self.cielo)
     }
 
     /// Sigue un rayo por la escena. `medio` es el bloque dentro del cual viaja (aire,

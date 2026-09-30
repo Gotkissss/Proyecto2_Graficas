@@ -51,10 +51,10 @@ impl Boveda {
         // franja naranja del amanecer/atardecer, más fuerte del lado donde está el sol
         let sol_bajo = 1.0 - escalon_suave(0.0, 0.4, luz.sol.y.abs());
         if sol_bajo > 0.0 {
-            let cerca_del_horizonte = (-dir.y.abs() * 3.5).exp();
+            let cerca_del_horizonte = (-dir.y.abs() * 5.5).exp();
             let hacia_el_sol = 0.35 + 0.65 * dir.punto(luz.sol).max(0.0);
             let fuerza = sol_bajo * cerca_del_horizonte * hacia_el_sol;
-            color = color.mezclar(Tinte::new(1.0, 0.42, 0.14), (fuerza * 0.8).min(1.0));
+            color = color.mezclar(Tinte::new(1.0, 0.42, 0.14), (fuerza * 0.7).min(1.0));
         }
 
         let alineado = dir.punto(luz.sol);
