@@ -70,11 +70,15 @@ fn main() {
     let foto = argumento(&args, "--foto");
     let hora = numero(&args, "--hora", 10.0);
 
+    let mundo = mundo_de_prueba();
+    let bodega = Bodega::surtir();
     let escena = Escena {
-        mundo: mundo_de_prueba(),
-        bodega: Bodega::surtir(),
+        faroles: luces::encender_faroles(&mundo, &bodega),
+        mundo,
+        bodega,
         boveda: boveda::Boveda::abrir(),
         cielo: LuzDelCielo::a_las(hora),
+        reloj: 0.0,
     };
     let mut camara = CamaraOrbital::nueva(escena.mundo.centro(), numero(&args, "--zoom", 28.0));
     camara.giro = numero(&args, "--giro", camara.giro);

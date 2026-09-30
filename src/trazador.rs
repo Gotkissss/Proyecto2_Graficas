@@ -1,7 +1,7 @@
 use crate::algebra::{Tinte, Vec3};
 use crate::boveda::Boveda;
-use crate::luces::LuzDelCielo;
-use crate::materiales::{Bodega, Material};
+use crate::luces::{Farol, LuzDelCielo};
+use crate::materiales::{Bloque, Bodega, Material};
 use crate::mundo::{AIRE, Golpe, Mundo};
 
 /// separación para que los rayos secundarios no choquen con la cara de donde salen
@@ -15,7 +15,12 @@ pub struct Escena {
     pub bodega: Bodega,
     pub boveda: Boveda,
     pub cielo: LuzDelCielo,
+    pub faroles: Vec<Farol>,
+    /// segundos desde que arrancó, para lo que se anima
+    pub reloj: f32,
 }
+
+const AGUA: u8 = Bloque::Agua.id();
 
 /// Coordenadas de textura dentro de la cara golpeada.
 /// En las caras laterales la v va invertida para que la textura no salga de cabeza.
@@ -209,6 +214,14 @@ impl Escena {
         mundo.unitario()
     }
 
+    /// Ondas en la superficie del agua: un par de senos que se mueven con el reloj.
+    fn oleaje(&self, punto: Vec3, signo: f32) -> Vec3 {
+        let t = self.reloj;
+        let dx = (punto.x * 2.3 + t * 1.4).sin() * 0.6 + (punto.x * 5.1 - punto.z * 3.3 + t * 2.2).sin() * 0.4;
+        let dz = (punto.z * 2.7 - t * 1.1).sin() * 0.6 + (punto.z * 4.6 + punto.x * 3.9 + t * 1.9).sin() * 0.4;
+        Vec3::new(dx * 0.035, signo, dz * 0.035).unitario()
+    }
+
     fn sombrear(&self, golpe: &Golpe, origen: Vec3, dir: Vec3, medio: u8, rebote: u32, aporte: f32) -> Tinte {
         let material = self.bodega.material(golpe.bloque);
         let punto = origen + dir * golpe.distancia;
@@ -220,28 +233,54 @@ impl Escena {
         let base = Tinte::new(texel[0], texel[1], texel[2]);
 
         // la normal de la cara sirve para despegar los rayos; para iluminar se usa la del relieve
-        let normal = match material.relieve {
-            Some(mapa) => self.normal_con_relieve(mapa, golpe, u, v),
-            None => cara,
+        if material.emision > 0.0 {
+            return base * material.emision;
+        }
+
+        let normal = if golpe.bloque == AGUA && golpe.eje == 1 {
+            self.oleaje(punto, golpe.signo)
+        } else if let Some(mapa) = material.relieve {
+            self.normal_con_relieve(mapa, golpe, u, v)
+        } else {
+            cara
         };
 
         let oclusion = 0.35 + 0.65 * self.oclusion(golpe, punto);
         let mut difusa = self.cielo.ambiente * oclusion;
         let mut brillo = Tinte::CERO;
 
-        let hacia_luz = self.cielo.hacia;
-        let de_frente = normal.punto(hacia_luz);
-        if de_frente > 0.0 && cara.punto(hacia_luz) > 0.0 {
-            let llega = self.luz_que_llega(afuera, hacia_luz, f32::INFINITY);
-            if llega.mayor() > 0.0 {
-                let luz = self.cielo.color * llega;
-                difusa += luz * (de_frente * (0.6 + 0.4 * oclusion));
-
-                // blinn-phong
-                let medio_camino = (hacia_luz - dir).unitario();
-                let reflejo = normal.punto(medio_camino).max(0.0).powf(material.pulido);
-                brillo += luz * (reflejo * material.especular);
+        // una luz cualquiera (sol, luna o farol) pegándole a este punto
+        let mut alumbrar = |hacia_luz: Vec3, color: Tinte, alcance: f32| {
+            let de_frente = normal.punto(hacia_luz);
+            if de_frente <= 0.0 || cara.punto(hacia_luz) <= 0.0 {
+                return;
             }
+            let llega = self.luz_que_llega(afuera, hacia_luz, alcance);
+            if llega.mayor() <= 0.0 {
+                return;
+            }
+            let luz = color * llega;
+            difusa += luz * (de_frente * (0.6 + 0.4 * oclusion));
+
+            // blinn-phong
+            let medio_camino = (hacia_luz - dir).unitario();
+            let reflejo = normal.punto(medio_camino).max(0.0).powf(material.pulido);
+            brillo += luz * (reflejo * material.especular);
+        };
+
+        alumbrar(self.cielo.hacia, self.cielo.color, f32::INFINITY);
+
+        for farol in &self.faroles {
+            let separacion = farol.posicion - afuera;
+            let d2 = separacion.punto(separacion);
+            if d2 >= farol.alcance * farol.alcance {
+                continue;
+            }
+            let d = d2.sqrt();
+            // cae con el cuadrado de la distancia y se corta suave al llegar al alcance
+            let ventana = 1.0 - d / farol.alcance;
+            let caida = ventana * ventana / (1.0 + 0.08 * d2);
+            alumbrar(separacion / d, farol.color * caida, d);
         }
 
         let superficie = base * difusa * material.albedo;
