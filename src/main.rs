@@ -14,11 +14,13 @@ use lienzo::Lienzo;
 use luces::LuzDelCielo;
 use materiales::{Bloque, Bodega};
 use mundo::Mundo;
+use pintor::Cuadrilla;
 use raylib::prelude::*;
 use trazador::Escena;
 
 const ANCHO_VENTANA: i32 = 1100;
 const ALTO_VENTANA: i32 = 700;
+const MUESTRAS_FOTO: u32 = 16;
 
 fn mundo_de_prueba() -> Mundo {
     let mut m = Mundo::vacio(16, 8, 16);
@@ -50,9 +52,12 @@ fn mundo_de_prueba() -> Mundo {
 }
 
 /// `diorama --foto salida.png` renderiza un cuadro y sale, sin abrir ventana.
-fn modo_foto(escena: &Escena, camara: &CamaraOrbital, ruta: &str) {
+fn modo_foto(escena: &Escena, camara: &CamaraOrbital, cuadrilla: &Cuadrilla, ruta: &str) {
     let mut lienzo = Lienzo::nuevo(ANCHO_VENTANA as usize, ALTO_VENTANA as usize);
-    pintor::pintar(escena, camara, &mut lienzo);
+    // varias pasadas para que salga con antialiasing
+    for _ in 0..MUESTRAS_FOTO {
+        cuadrilla.pintar(escena, camara, &mut lienzo);
+    }
     lienzo.guardar_png(ruta);
 }
 
@@ -84,8 +89,12 @@ fn main() {
     camara.giro = numero(&args, "--giro", camara.giro);
     camara.cabeceo = numero(&args, "--cabeceo", camara.cabeceo);
 
+    let cuadrilla = Cuadrilla::reunir();
+
     if let Some(ruta) = foto {
-        modo_foto(&escena, &camara, ruta);
+        let inicio = std::time::Instant::now();
+        modo_foto(&escena, &camara, &cuadrilla, ruta);
+        println!("{} muestras en {:.0} ms con {} hilos", MUESTRAS_FOTO, inicio.elapsed().as_secs_f32() * 1000.0, cuadrilla.hilos);
         return;
     }
 
@@ -119,7 +128,8 @@ fn main() {
             camara.acercar(1.0 + dt);
         }
 
-        pintor::pintar(&escena, &camara, &mut lienzo);
+        lienzo.borrar();
+        cuadrilla.pintar(&escena, &camara, &mut lienzo);
         pantalla.update_texture(&lienzo.bytes).expect("lienzo de tamaño distinto a la textura");
 
         let mut d = rl.begin_drawing(&hilo);
