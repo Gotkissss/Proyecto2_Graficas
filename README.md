@@ -9,7 +9,9 @@ semilla da una isla distinta.
 
 ## Video
 
-> _pendiente: aquí va el video del diorama_
+[![video del diorama en YouTube](https://img.youtube.com/vi/son0ORjvdbg/hqdefault.jpg)](https://youtu.be/son0ORjvdbg)
+
+Clic en la imagen para verlo en YouTube.
 
 ## Capturas
 
